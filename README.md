@@ -1,5 +1,7 @@
 # 🏒 Hockey Coach Assistant
 
+**Español** · [English](README.en.md)
+
 **Versión 1.0 · octubre de 2026** · [Novedades](CHANGELOG.md)
 
 > **Antes de empezar:** este kit funciona dentro de **Claude**, así que necesitas una cuenta de Claude. Puedes probarlo con el plan gratuito, pero para usarlo de verdad se recomienda **Claude Pro** (más detalles en [Requisitos](#requisitos)).
@@ -8,7 +10,7 @@
 
 **Un asistente de entrenador de hockey hielo construido sobre Claude.** Programa entrenamientos con tus propios ejercicios y según tu idea de juego, los dibuja en una pizarra interactiva, genera el PDF de cada sesión, lleva el registro de lo trabajado durante la temporada y hace seguimiento del bienestar, la condición física y las estadísticas de tus jugadores. Después le preguntas lo que quieras y te responde con datos, tablas o gráficas.
 
-> *English summary: a downloadable kit to build an ice hockey coaching assistant on Claude Projects. It plans practices from your own drill library and game model, draws drills on an interactive IIHF rink, exports session PDFs, logs what was trained across the season, and tracks player wellbeing, fitness tests and stats through Google Forms and Sheets — then answers any question about it with figures, tables or charts. Templates are in Spanish.*
+> *🇬🇧 Full English version: [README.en.md](README.en.md).*
 
 ![Pizarra interactiva](docs/capturas/pizarra.png)
 
