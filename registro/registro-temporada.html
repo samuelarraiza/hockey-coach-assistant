@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Registro de temporada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ice:#F4F7FA; --paper:#FFFFFF; --ink:#14233A; --steel:#5E6E85; --rule:#DCE4ED;
+  --blue:#1F5FBF; --red:#D0312D; --track:#E9EEF4;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ice:#0E1621; --paper:#152030; --ink:#E6EDF6; --steel:#93A3B8; --rule:#26354A;
+    --blue:#5B92E5; --red:#E5605B; --track:#1E2B3D;
+  }
+}
+:root[data-theme="dark"]{
+  --ice:#0E1621; --paper:#152030; --ink:#E6EDF6; --steel:#93A3B8; --rule:#26354A;
+  --blue:#5B92E5; --red:#E5605B; --track:#1E2B3D;
+}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100%;background:var(--ice);color:var(--ink);
+  font:16px/1.5 Barlow,"Segoe UI",Arial,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 20px 64px}
+
+header h1{font:700 clamp(34px,6vw,52px)/1 "Barlow Condensed","Arial Narrow",Arial,sans-serif;margin:0;letter-spacing:.01em}
+header p{margin:6px 0 0;color:var(--steel)}
+.lines{display:grid;grid-template-columns:1fr 6px 1fr 6px 1fr 6px 1fr;gap:0;height:6px;margin:18px 0 22px}
+.lines i{display:block;background:var(--rule)}
+.lines .b{background:var(--blue)} .lines .r{background:var(--red)}
+
+.totals{display:flex;flex-wrap:wrap;gap:28px;margin-bottom:8px}
+.totals div b{display:block;font:700 34px/1 "Barlow Condensed","Arial Narrow",Arial,sans-serif}
+.totals div span{color:var(--steel);font-size:14px}
+
+section{margin-top:34px}
+h2{font:700 26px/1.1 "Barlow Condensed","Arial Narrow",Arial,sans-serif;margin:0 0 4px}
+.lead{color:var(--steel);margin:0 0 14px;font-size:15px}
+
+.period{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin:4px 0 16px;background:var(--paper)}
+.period button{font:inherit;font-size:14px;border:0;background:none;color:var(--ink);padding:7px 14px;cursor:pointer}
+.period button+button{border-left:1px solid var(--rule)}
+.period button[aria-pressed="true"]{background:var(--blue);color:#fff}
+button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+.bloque{margin:0 0 14px}
+.bloque h3{display:flex;align-items:center;gap:8px;font:600 15px/1.3 Barlow,Arial,sans-serif;margin:0 0 6px}
+.bloque h3 i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.bloque h3 small{color:var(--steel);font-weight:500}
+.row{display:grid;grid-template-columns:minmax(120px,210px) 1fr 92px;gap:12px;align-items:center;padding:3px 0}
+.row .lab{font-size:15px}
+.row .bar{height:12px;background:var(--track);border-radius:3px;overflow:hidden}
+.row .bar i{display:block;height:100%;border-radius:3px}
+.row .val{white-space:nowrap;font-size:14px;color:var(--steel);text-align:right;font-variant-numeric:tabular-nums}
+.row.zero .lab{color:var(--steel)}
+
+.olvidados{background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--red);border-radius:6px;padding:12px 14px;margin-top:10px;font-size:15px}
+.olvidados b{display:block;margin-bottom:2px}
+
+.timeline-scroll{overflow-x:auto;padding-bottom:6px}
+.timeline{display:flex;gap:10px;align-items:flex-end;min-height:190px}
+.col{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:44px}
+.stack{width:28px;height:150px;display:flex;flex-direction:column-reverse;background:var(--track);border-radius:4px;overflow:hidden}
+.stack i{display:block;width:100%}
+.col span{font-size:12px;color:var(--steel);white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--steel);margin-top:10px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+.sesiones{border-top:1px solid var(--rule)}
+details{border-bottom:1px solid var(--rule)}
+summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:86px 1fr auto;gap:14px;padding:12px 2px;align-items:baseline}
+summary::-webkit-details-marker{display:none}
+summary:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+summary .f{font:600 18px/1 "Barlow Condensed","Arial Narrow",Arial,sans-serif}
+summary .t{font-weight:600}
+summary .m{color:var(--steel);font-size:14px;font-variant-numeric:tabular-nums}
+.det{padding:0 2px 16px 100px;font-size:15px}
+.det p{margin:0 0 8px}
+.det table{border-collapse:collapse;width:100%;font-size:14px}
+.det td,.det th{padding:6px 8px 6px 0;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
+.det th{color:var(--steel);font-weight:500}
+.chip{display:inline-block;font-size:12px;padding:1px 7px;border-radius:9px;background:var(--track);margin:0 4px 3px 0}
+
+.empty{background:var(--paper);border:1px dashed var(--rule);border-radius:8px;padding:22px;color:var(--steel)}
+.empty b{color:var(--ink);display:block;margin-bottom:4px}
+
+@media (max-width:640px){
+  .row{grid-template-columns:1fr auto}
+  .row .bar{grid-column:1 / -1;grid-row:2}
+  .det{padding-left:2px}
+  summary{grid-template-columns:70px 1fr}
+  summary .m{grid-column:2}
+}
+@media (prefers-reduced-motion: no-preference){
+  .row .bar i,.stack i{transition:height .3s ease,width .3s ease}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Registro de temporada</h1>
+    <p id="sub">Minutos de hielo dedicados a cada contenido, sesión a sesión.</p>
+    <div class="lines" aria-hidden="true"><i></i><i class="b"></i><i></i><i class="r"></i><i></i><i class="b"></i><i></i></div>
+    <div class="totals" id="totals"></div>
+  </header>
+
+  <div id="estado"></div>
+
+  <section id="s-reparto" hidden>
+    <h2>Reparto del trabajo</h2>
+    <p class="lead">Minutos acumulados por contenido en el periodo elegido.</p>
+    <div class="period" role="group" aria-label="Periodo">
+      <button type="button" data-p="0" aria-pressed="true">Temporada</button>
+      <button type="button" data-p="28" aria-pressed="false">4 semanas</button>
+      <button type="button" data-p="56" aria-pressed="false">8 semanas</button>
+    </div>
+    <div id="reparto"></div>
+    <div id="olvidados"></div>
+  </section>
+
+  <section id="s-linea" hidden>
+    <h2>Sesión a sesión</h2>
+    <p class="lead">Cada columna es una sesión, coloreada por bloque de contenido.</p>
+    <div class="timeline-scroll"><div class="timeline" id="timeline"></div></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section id="s-lista" hidden>
+    <h2>Sesiones</h2>
+    <p class="lead">Pulsa una sesión para ver sus ejercicios.</p>
+    <div class="sesiones" id="lista"></div>
+  </section>
+</div>
+
+<script>
+/* ===== CONFIGURACIÓN: cambia el nombre de tu equipo ===== */
+const EQUIPO = "Mi equipo";
+/* Para cambiar los contenidos, edita BLOQUES y TAX (y la misma lista en las instrucciones del proyecto). */
+document.getElementById("sub").textContent = EQUIPO + ". Minutos de hielo dedicados a cada contenido, sesión a sesión.";
+document.title = "Registro de temporada – " + EQUIPO;
+
+const BLOQUES = [
+  {n:"Patinaje", c:"#1F5FBF"},
+  {n:"Técnica individual", c:"#2A9DB0"},
+  {n:"Ataque", c:"#D0312D"},
+  {n:"Defensa", c:"#55678A"},
+  {n:"Transiciones", c:"#E39B2D"},
+  {n:"Situaciones especiales", c:"#7A5BB5"},
+  {n:"Porteros", c:"#2F8F5B"}
+];
+const TAX = [
+  {k:"patinaje_tecnico", l:"Técnica de patinaje", b:"Patinaje"},
+  {k:"patinaje_cardio", l:"Patinaje físico / cardio", b:"Patinaje"},
+  {k:"pase", l:"Pase y recepción", b:"Técnica individual"},
+  {k:"conduccion", l:"Conducción y manejo", b:"Técnica individual"},
+  {k:"tiro", l:"Tiro", b:"Técnica individual"},
+  {k:"salida_zona", l:"Salida de zona", b:"Ataque"},
+  {k:"zona_neutral_ataque", l:"Zona neutral ofensiva", b:"Ataque"},
+  {k:"ataque_zona", l:"Ataque en zona", b:"Ataque"},
+  {k:"forecheck", l:"Forecheck", b:"Defensa"},
+  {k:"zona_neutral_defensa", l:"Zona neutral defensiva", b:"Defensa"},
+  {k:"defensa_zona", l:"Defensa en zona", b:"Defensa"},
+  {k:"transiciones", l:"Transiciones", b:"Transiciones"},
+  {k:"superioridad", l:"Superioridad", b:"Situaciones especiales"},
+  {k:"inferioridad", l:"Inferioridad", b:"Situaciones especiales"},
+  {k:"saques", l:"Saques", b:"Situaciones especiales"},
+  {k:"porteros", l:"Trabajo de porteros", b:"Porteros"}
+];
+const COLOR = Object.fromEntries(BLOQUES.map(b => [b.n, b.c]));
+const INFO = Object.fromEntries(TAX.map(t => [t.k, t]));
+
+let sesiones = [];
+let periodo = 0;
+
+const $ = id => document.getElementById(id);
+function h(tag, text, cls, parent){
+  const e = document.createElement(tag);
+  if (text != null) e.textContent = text;
+  if (cls) e.className = cls;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const fechaCorta = f => { const d = new Date(f + "T12:00:00"); return isNaN(d) ? f : d.toLocaleDateString("es-ES", {day:"numeric", month:"short"}); };
+const fechaLarga = f => { const d = new Date(f + "T12:00:00"); return isNaN(d) ? f : d.toLocaleDateString("es-ES", {weekday:"long", day:"numeric", month:"long"}); };
+const infoDe = k => INFO[k] || {k, l:k.replace(/_/g, " "), b:"Otros"};
+const minutosDe = s => Object.values(s.contenidos || {}).reduce((a, b) => a + (+b || 0), 0);
+
+function enPeriodo(s){
+  if (!periodo) return true;
+  const d = new Date(s.fecha + "T12:00:00"), lim = new Date();
+  lim.setDate(lim.getDate() - periodo);
+  return d >= lim;
+}
+
+function estado(titulo, texto){
+  const e = $("estado"); e.textContent = "";
+  if (!titulo) return;
+  const box = h("div", null, "empty", e);
+  h("b", titulo, null, box); h("span", texto, null, box);
+}
+
+function render(){
+  const hay = sesiones.length > 0;
+  ["s-reparto", "s-linea", "s-lista"].forEach(id => $(id).hidden = !hay);
+
+  const tot = $("totals"); tot.textContent = "";
+  const mins = sesiones.reduce((a, s) => a + minutosDe(s), 0);
+  const t = (v, l) => { const d = h("div", null, null, tot); h("b", v, null, d); h("span", l, null, d); };
+  t(String(sesiones.length), sesiones.length === 1 ? "sesión registrada" : "sesiones registradas");
+  t((mins / 60).toFixed(1).replace(".", ","), "horas de hielo");
+  if (hay) t(fechaCorta(sesiones[0].fecha), "última sesión");
+
+  if (!hay){
+    estado("Todavía no hay sesiones registradas.", "Cuando confirmes una sesión en el proyecto, Claude la apuntará aquí con su fecha y sus contenidos.");
+    return;
+  }
+  estado();
+
+  // Reparto
+  const sel = sesiones.filter(enPeriodo);
+  const acc = {};
+  for (const s of sel) for (const [k, v] of Object.entries(s.contenidos || {})) acc[k] = (acc[k] || 0) + (+v || 0);
+  const total = Object.values(acc).reduce((a, b) => a + b, 0) || 1;
+  const max = Math.max(1, ...Object.values(acc));
+  const rep = $("reparto"); rep.textContent = "";
+  const extra = Object.keys(acc).filter(k => !INFO[k]).map(infoDe);
+  const bloques = BLOQUES.concat(extra.length ? [{n:"Otros", c:"#8A94A6"}] : []);
+  for (const b of bloques){
+    const items = TAX.filter(t => t.b === b.n).concat(extra.filter(t => t.b === b.n));
+    const sub = items.reduce((a, t) => a + (acc[t.k] || 0), 0);
+    const box = h("div", null, "bloque", rep);
+    const h3 = h("h3", null, null, box);
+    const sw = h("i", null, null, h3); sw.style.background = b.c;
+    h3.appendChild(document.createTextNode(b.n + " "));
+    h("small", `${sub} min`, null, h3);
+    for (const it of items){
+      const m = acc[it.k] || 0;
+      const row = h("div", null, "row" + (m ? "" : " zero"), box);
+      h("span", it.l, "lab", row);
+      const bar = h("div", null, "bar", row);
+      const fill = h("i", null, null, bar); fill.style.width = (m / max * 100) + "%"; fill.style.background = b.c;
+      h("span", m ? `${m} min · ${Math.round(m / total * 100)} %` : "0 min", "val", row);
+    }
+  }
+  const sin = TAX.filter(t => !acc[t.k]);
+  const ol = $("olvidados"); ol.textContent = "";
+  if (sin.length && sel.length){
+    const box = h("div", null, "olvidados", ol);
+    h("b", "Sin trabajar en este periodo", null, box);
+    h("span", sin.map(t => t.l).join(", ") + ".", null, box);
+  }
+
+  // Línea temporal (de más antigua a más reciente)
+  const tl = $("timeline"); tl.textContent = "";
+  const maxS = Math.max(1, ...sesiones.map(minutosDe));
+  for (const s of sesiones.slice().reverse()){
+    const col = h("div", null, "col", tl);
+    const st = h("div", null, "stack", col);
+    st.title = `${fechaLarga(s.fecha)}: ${s.titulo || ""} (${minutosDe(s)} min)`;
+    for (const b of bloques){
+      const m = Object.entries(s.contenidos || {}).filter(([k]) => infoDe(k).b === b.n).reduce((a, [, v]) => a + (+v || 0), 0);
+      if (!m) continue;
+      const seg = h("i", null, null, st); seg.style.height = (m / maxS * 100) + "%"; seg.style.background = b.c;
+    }
+    h("span", fechaCorta(s.fecha), null, col);
+  }
+  const lg = $("legend"); lg.textContent = "";
+  for (const b of bloques){ const sp = h("span", null, null, lg); const i = h("i", null, null, sp); i.style.background = b.c; sp.appendChild(document.createTextNode(b.n)); }
+
+  // Lista
+  const li = $("lista"); li.textContent = "";
+  for (const s of sesiones){
+    const d = h("details", null, null, li);
+    const su = h("summary", null, null, d);
+    h("span", fechaCorta(s.fecha), "f", su);
+    h("span", s.titulo || "Sesión", "t", su);
+    h("span", `${minutosDe(s)} min`, "m", su);
+    const det = h("div", null, "det", d);
+    h("p", fechaLarga(s.fecha).replace(/^./, c => c.toUpperCase()) + (s.jugadores ? `. ${s.jugadores} jugadores` : "") + (s.porteros ? `, ${s.porteros} porteros` : "") + ".", null, det);
+    if (s.objetivo) h("p", s.objetivo, null, det);
+    if ((s.ejercicios || []).length){
+      const tb = h("table", null, null, det);
+      const hr = h("tr", null, null, h("thead", null, null, tb));
+      ["Ejercicio", "Min", "Contenidos", "Origen"].forEach(x => h("th", x, null, hr));
+      const body = h("tbody", null, null, tb);
+      for (const ex of s.ejercicios){
+        const tr = h("tr", null, null, body);
+        h("td", ex.titulo || "", null, tr);
+        h("td", ex.minutos != null ? String(ex.minutos) : "", null, tr);
+        const c = h("td", null, null, tr);
+        for (const k of ex.contenidos || []) h("span", infoDe(k).l, "chip", c);
+        h("td", ex.origen || "", null, tr);
+      }
+    }
+    if (s.notas) h("p", "Notas: " + s.notas, null, det);
+    if (s.valoracion) h("p", "Cómo fue: " + s.valoracion, null, det);
+  }
+}
+
+document.querySelectorAll(".period button").forEach(b => b.addEventListener("click", () => {
+  periodo = +b.dataset.p;
+  document.querySelectorAll(".period button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  render();
+}));
+
+render();
+estado("Cargando el registro…", "");
+
+(async () => {
+  let db = null;
+  try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (_) { db = null; }
+  if (!db){
+    estado("No se puede abrir el registro desde aquí.", "Abre esta página desde Claude, con tu cuenta, para ver las sesiones.");
+    return;
+  }
+  db.collection("sesiones").onSnapshot(snap => {
+    sesiones = snap.docs.map(d => Object.assign({id: d.id}, d.data()))
+      .filter(s => s.fecha)
+      .sort((a, b) => (b.fecha + b.id).localeCompare(a.fecha + a.id));
+    render();
+  }, err => {
+    estado("No se ha podido leer el registro.", err && err.code === "revoked" ? "Ya no tienes acceso a esta página." : "Vuelve a cargar la página en unos segundos.");
+  });
+})();
+</script>
+</body>
+</html>

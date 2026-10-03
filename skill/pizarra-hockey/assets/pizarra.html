@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pizarra de hockey</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--text:#1d2330;--muted:#5b6475;--line:#d9dde5;--accent:#1f5fbf}
+@media (prefers-color-scheme: dark){:root{--bg:#14171c;--card:#1d2128;--text:#e8ebf0;--muted:#9aa3b2;--line:#323844;--accent:#6aa0ff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:16px}
+h1{font-size:1.3rem;margin:0 auto 12px;max-width:1100px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 auto 18px;max-width:1100px}
+.card h2{font-size:1.1rem;margin:0 0 4px}
+.meta{color:var(--muted);font-size:.85rem;margin-bottom:8px}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center}
+.toolbar button,.toolbar select,.toolbar input{font:inherit;font-size:.82rem;padding:5px 9px;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
+.toolbar button:hover{border-color:var(--accent)}
+.toolbar button:disabled{opacity:.45;cursor:default}
+.toolbar button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.toolbar input{width:90px;cursor:text}
+.toolbar input:disabled{opacity:.45}
+.sep{width:1px;height:22px;background:var(--line);margin:0 2px}
+.board{width:100%;height:auto;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+.hint{font-size:.78rem;color:var(--muted);margin-top:4px;min-height:1.1em}
+.desc{margin-top:10px;font-size:.92rem;line-height:1.45}
+.desc p{margin:0 0 6px}
+.desc ul{margin:4px 0 0 18px;padding:0}
+textarea.json{width:100%;height:180px;margin-top:8px;font-family:ui-monospace,Menlo,monospace;font-size:.75rem;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;display:none}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.8rem;color:var(--muted);align-items:center}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend svg{width:64px;height:20px;background:#fbfdff;border-radius:4px}
+
+/* ---------- Modo documento (PDF) ---------- */
+@page{size:A4;margin:14mm 14mm 16mm}
+body.print{background:#fff;color:#1d2330;padding:0;font-family:"Helvetica Neue",Helvetica,Arial,"DejaVu Sans",sans-serif}
+body.print .page{break-after:page;max-width:182mm;margin:0 auto}
+body.print .page:last-child{break-after:auto}
+body.print .kicker{font-size:9pt;color:#5b6475;text-transform:uppercase;letter-spacing:.06em;margin:0 0 2px}
+body.print h1{font-size:20pt;margin:0 0 4px;max-width:none}
+body.print h2{font-size:15pt;margin:0 0 6px}
+body.print h3{font-size:9.5pt;text-transform:uppercase;letter-spacing:.05em;color:#1f5fbf;margin:12px 0 3px;break-after:avoid}
+body.print p,body.print li{font-size:10.5pt;line-height:1.45;margin:0 0 4px}
+body.print ul,body.print ol{margin:2px 0 0 18px;padding:0}
+body.print .sub{color:#5b6475;font-size:10.5pt;margin-bottom:12px}
+body.print .stats{display:flex;gap:10px;margin:10px 0 4px}
+body.print .stat{flex:1;border:1px solid #d9dde5;border-radius:8px;padding:8px 10px}
+body.print .stat b{display:block;font-size:13pt}
+body.print .stat span{font-size:8.5pt;color:#5b6475;text-transform:uppercase;letter-spacing:.04em}
+body.print table.res{width:100%;border-collapse:collapse;margin-top:4px}
+body.print table.res th,body.print table.res td{border-bottom:1px solid #d9dde5;padding:6px;text-align:left;font-size:10pt;vertical-align:top}
+body.print table.res th{font-size:8.5pt;color:#5b6475;text-transform:uppercase;letter-spacing:.04em}
+body.print .chips{margin:0 0 4px}
+body.print .chip{display:inline-block;padding:2px 9px;border-radius:10px;background:#eef3fb;color:#1f5fbf;font-size:9pt;margin:0 5px 3px 0}
+body.print .chip.o-Adaptado{background:#fff4e0;color:#9a5a00}
+body.print .chip.o-Nuevo{background:#fde8e8;color:#b0261f}
+body.print .chip.o-Documento{background:#e6f4ec;color:#1b6e3d}
+body.print .fuente{font-size:9pt;color:#5b6475;margin-bottom:6px}
+body.print .pboard{width:100%;height:auto;display:block;margin:6px auto 4px;break-inside:avoid}
+body.print .pboard.media{width:72%}
+body.print .legend{border:none;padding:0;margin:6px 0 0;max-width:none}
+body.print .legend svg{background:#f4f7fb}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const DATA = /*__DATA__*/null;
+
+const NS = "http://www.w3.org/2000/svg";
+const INK = "#1d2330";
+const COLORES = {propio:"#1f5fbf", rival:"#d0312d", portero:"#1b8a4b", entrenador:"#222"};
+const ESTILOS = {patinaje:"Patinaje", pase:"Pase", tiro:"Tiro", conduccion:"Conducción", atras:"Patinaje atrás", parada:"Parada"};
+const Z = {porteria:0, cono:1, trayectoria:2, texto:3, disco:4, jugador:5};
+const BL = 7.14, GL = 26, R = 8.5;
+
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const r1 = v => Math.round(v * 10) / 10;
+const clamp = (x, y) => [r1(Math.max(-30, Math.min(30, x))), r1(Math.max(-15, Math.min(15, y)))];
+
+/* ---------- Pista (IIHF 60 x 30 m) ---------- */
+function drawRink(svg, id){
+  const defs = el("defs", {}, svg);
+  const cp = el("clipPath", {id: "clip" + id}, defs);
+  el("rect", {x:-30, y:-15, width:60, height:30, rx:R, ry:R}, cp);
+  const g = el("g", {"clip-path": `url(#clip${id})`}, svg);
+  el("rect", {x:-30, y:-15, width:60, height:30, fill:"#fbfdff"}, g);
+  for (const s of [-1, 1]){
+    const x = s * GL;
+    el("path", {d:`M ${x} -1.83 A 1.83 1.83 0 0 ${s > 0 ? 0 : 1} ${x} 1.83 Z`, fill:"#d6e8ff", stroke:"#d0312d", "stroke-width":0.06}, g);
+    el("line", {x1:x, y1:-15, x2:x, y2:15, stroke:"#d0312d", "stroke-width":0.08}, g);
+    el("rect", {x: s > 0 ? x : x - 1.12, y:-0.915, width:1.12, height:1.83, fill:"none", stroke:"#d0312d", "stroke-width":0.12}, g);
+    for (const yy of [-7, 7]){
+      el("circle", {cx:s*20, cy:yy, r:4.5, fill:"none", stroke:"#d0312d", "stroke-width":0.08}, g);
+      el("circle", {cx:s*20, cy:yy, r:0.3, fill:"#d0312d"}, g);
+      el("circle", {cx:s*(BL-1.5), cy:yy, r:0.3, fill:"#d0312d"}, g);
+    }
+    el("rect", {x:s*BL - 0.15, y:-15, width:0.3, height:30, fill:"#1f5fbf"}, g);
+  }
+  el("rect", {x:-0.15, y:-15, width:0.3, height:30, fill:"#d0312d"}, g);
+  el("circle", {cx:0, cy:0, r:4.5, fill:"none", stroke:"#1f5fbf", "stroke-width":0.08}, g);
+  el("circle", {cx:0, cy:0, r:0.18, fill:"#1f5fbf"}, g);
+  el("rect", {x:-30, y:-15, width:60, height:30, rx:R, ry:R, fill:"none", stroke:"#2b3140", "stroke-width":0.25}, svg);
+}
+
+/* ---------- Geometría de trayectorias ---------- */
+function sample(pts){
+  if (pts.length < 2) return pts.map(p => [p[0], p[1]]);
+  const P = [pts[0], ...pts, pts[pts.length - 1]], out = [];
+  for (let i = 1; i < P.length - 2; i++){
+    const [p0, p1, p2, p3] = [P[i-1], P[i], P[i+1], P[i+2]];
+    for (let k = 0; k < 20; k++){
+      const t = k / 20, t2 = t*t, t3 = t2*t;
+      const f = j => 0.5 * (2*p1[j] + (-p0[j] + p2[j])*t + (2*p0[j] - 5*p1[j] + 4*p2[j] - p3[j])*t2 + (-p0[j] + 3*p1[j] - 3*p2[j] + p3[j])*t3);
+      out.push([f(0), f(1)]);
+    }
+  }
+  out.push([pts[pts.length-1][0], pts[pts.length-1][1]]);
+  return out;
+}
+function resample(s, step){
+  const L = [0];
+  for (let i = 1; i < s.length; i++) L.push(L[i-1] + Math.hypot(s[i][0]-s[i-1][0], s[i][1]-s[i-1][1]));
+  const tot = L[L.length-1], out = [];
+  const n = Math.max(1, Math.round(tot / step));
+  let j = 1;
+  for (let k = 0; k <= n; k++){
+    const d = tot * k / n;
+    while (j < s.length - 1 && L[j] < d) j++;
+    const a = s[j-1], b = s[j], seg = (L[j] - L[j-1]) || 1e-9;
+    const u = Math.min(1, Math.max(0, (d - L[j-1]) / seg));
+    out.push({x: a[0] + (b[0]-a[0])*u, y: a[1] + (b[1]-a[1])*u, tx: (b[0]-a[0])/seg, ty: (b[1]-a[1])/seg, d});
+  }
+  return {pts: out, tot};
+}
+const poly = pts => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(2) + " " + p[1].toFixed(2)).join(" ");
+function arrow(g, p, len, half, color){
+  const bx = p.x - p.tx*len, by = p.y - p.ty*len, nx = -p.ty, ny = p.tx;
+  el("polygon", {points:`${p.x},${p.y} ${bx+nx*half},${by+ny*half} ${bx-nx*half},${by-ny*half}`, fill:color}, g);
+}
+
+function drawTraj(g, it, opacity){
+  const color = it.color || INK;
+  const pts = it.puntos || [];
+  if (pts.length < 2) return;
+  const {pts: P, tot} = resample(sample(pts), 0.08);
+  if (tot < 0.05) return;
+  const end = P[P.length-1];
+  const sub = maxD => P.filter(p => p.d <= maxD);
+  const attrs = extra => Object.assign({fill:"none", stroke:color, "stroke-width":0.13, "stroke-linecap":"round", "stroke-linejoin":"round", opacity: opacity || 1}, extra);
+  const estilo = it.estilo || "patinaje";
+  if (estilo === "pase"){
+    el("path", attrs({d: poly(sub(tot - 0.5).map(p => [p.x, p.y])), "stroke-dasharray":"0.45 0.3"}), g);
+    arrow(g, end, 0.7, 0.35, color);
+  } else if (estilo === "tiro"){
+    for (const o of [-0.14, 0.14]) el("path", attrs({d: poly(sub(tot - 0.6).map(p => [p.x - p.ty*o, p.y + p.tx*o]))}), g);
+    arrow(g, end, 0.9, 0.5, color);
+  } else if (estilo === "conduccion"){
+    const line = sub(tot - 0.5).map(p => {
+      const a = 0.3 * Math.sin(2*Math.PI*p.d/1.1) * Math.max(0, Math.min(1, (tot - 0.9 - p.d)/0.4));
+      return [p.x - p.ty*a, p.y + p.tx*a];
+    });
+    el("path", attrs({d: poly(line)}), g);
+    arrow(g, end, 0.7, 0.35, color);
+  } else if (estilo === "atras"){
+    el("path", attrs({d: poly(sub(tot - 0.5).map(p => [p.x, p.y]))}), g);
+    for (let d = 0.6; d < tot - 0.9; d += 1.0){
+      const p = P.reduce((a, b) => Math.abs(b.d - d) < Math.abs(a.d - d) ? b : a);
+      el("line", attrs({x1: p.x + p.ty*0.35, y1: p.y - p.tx*0.35, x2: p.x - p.ty*0.35, y2: p.y + p.tx*0.35}), g);
+    }
+    arrow(g, end, 0.7, 0.35, color);
+  } else if (estilo === "parada"){
+    el("path", attrs({d: poly(P.map(p => [p.x, p.y]))}), g);
+    el("line", attrs({x1: end.x + end.ty*0.6, y1: end.y - end.tx*0.6, x2: end.x - end.ty*0.6, y2: end.y + end.tx*0.6, "stroke-width":0.2}), g);
+  } else {
+    el("path", attrs({d: poly(sub(tot - 0.5).map(p => [p.x, p.y]))}), g);
+    arrow(g, end, 0.7, 0.35, color);
+  }
+  if (it.etiqueta){
+    const s0 = P[Math.min(P.length-1, 6)];
+    const cx = s0.x - s0.ty*0.75, cy = s0.y + s0.tx*0.75;
+    el("circle", {cx, cy, r:0.5, fill:"#fff", stroke:color, "stroke-width":0.08}, g);
+    const t = el("text", {x:cx, y:cy, "font-size":0.6, "font-weight":700, "text-anchor":"middle", "dominant-baseline":"central", fill:color}, g);
+    t.textContent = it.etiqueta;
+  }
+}
+
+function drawItem(g, it){
+  const tipo = it.tipo;
+  if (tipo === "trayectoria"){
+    drawTraj(g, it);
+    if ((it.puntos || []).length >= 2)
+      el("path", {d: poly(sample(it.puntos)), fill:"none", stroke:"transparent", "stroke-width":0.9}, g);
+    return;
+  }
+  const ang = tipo === "porteria" ? (it.angulo || 0) : 0;
+  g.setAttribute("transform", `translate(${it.x || 0} ${it.y || 0})` + (ang ? ` rotate(${ang})` : ""));
+  if (tipo === "jugador"){
+    const eq = it.equipo || "propio", col = COLORES[eq] || COLORES.propio;
+    if (eq === "entrenador"){
+      el("polygon", {points:"0,-1 0.95,0.7 -0.95,0.7", fill:col, stroke:"#fff", "stroke-width":0.1}, g);
+    } else {
+      el("circle", {r:0.85, fill:col, stroke:"#fff", "stroke-width":0.12}, g);
+    }
+    const lab = it.etiqueta != null && it.etiqueta !== "" ? String(it.etiqueta) : (eq === "portero" ? "G" : eq === "entrenador" ? "E" : "");
+    const t = el("text", {y: eq === "entrenador" ? 0.15 : 0, "font-size": lab.length > 2 ? 0.6 : 0.8, "font-weight":700, "text-anchor":"middle", "dominant-baseline":"central", fill:"#fff"}, g);
+    t.textContent = lab;
+  } else if (tipo === "disco"){
+    const n = Math.max(1, Math.min(6, it.cantidad || 1));
+    const off = [[0,0],[0.5,0.2],[-0.4,0.35],[0.15,-0.45],[-0.55,-0.25],[0.6,-0.35]];
+    for (let k = 0; k < n; k++) el("circle", {cx:off[k][0], cy:off[k][1], r:0.3, fill:"#111"}, g);
+  } else if (tipo === "cono"){
+    el("polygon", {points:"0,-0.55 0.5,0.4 -0.5,0.4", fill:"#f28c28", stroke:"#b85f0c", "stroke-width":0.06}, g);
+  } else if (tipo === "porteria"){
+    el("path", {d:"M0 -0.915 L-1.12 -0.915 L-1.12 0.915 L0 0.915", fill:"rgba(208,49,45,0.12)", stroke:"#d0312d", "stroke-width":0.14}, g);
+  } else if (tipo === "texto"){
+    const t = el("text", {"font-size": it.tam || 1, "font-weight":600, "text-anchor":"middle", "dominant-baseline":"central", fill: it.color || INK, stroke:"#fff", "stroke-width":0.25, "paint-order":"stroke"}, g);
+    t.textContent = it.texto || "";
+  }
+}
+
+/* ---------- Pizarra interactiva ---------- */
+let activeBoard = null;
+
+class Board {
+  constructor(ex, idx, root){
+    this.ex = ex; this.idx = idx;
+    this.orig = JSON.stringify(ex.elementos || []);
+    this.items = JSON.parse(this.orig);
+    this.vista = ex.vista === "media" ? "media" : "entera";
+    this.sel = -1; this.drawing = null; this.drag = null; this.mouse = null;
+
+    const card = document.createElement("section"); card.className = "card"; root.appendChild(card);
+    const h = document.createElement("h2"); h.textContent = ex.titulo || `Ejercicio ${idx + 1}`; card.appendChild(h);
+    const meta = document.createElement("div"); meta.className = "meta";
+    meta.textContent = [ex.duracion, this.vista === "media" ? "Media pista" : "Pista entera"].filter(Boolean).join(" · ");
+    card.appendChild(meta);
+
+    const tb = document.createElement("div"); tb.className = "toolbar"; card.appendChild(tb);
+    const btn = (label, fn, title) => { const b = document.createElement("button"); b.textContent = label; if (title) b.title = title; b.onclick = () => { activeBoard = this; fn(); }; tb.appendChild(b); return b; };
+    const sep = () => { const s = document.createElement("span"); s.className = "sep"; tb.appendChild(s); };
+    btn("+ Propio", () => this.add({tipo:"jugador", equipo:"propio", etiqueta:""}));
+    btn("+ Rival", () => this.add({tipo:"jugador", equipo:"rival", etiqueta:""}));
+    btn("+ Portero", () => this.add({tipo:"jugador", equipo:"portero", etiqueta:"G"}));
+    btn("+ Entrenador", () => this.add({tipo:"jugador", equipo:"entrenador", etiqueta:"E"}));
+    btn("+ Disco", () => this.add({tipo:"disco"}));
+    btn("+ Cono", () => this.add({tipo:"cono"}));
+    btn("+ Portería", () => this.add({tipo:"porteria", angulo:0}));
+    btn("+ Texto", () => { this.add({tipo:"texto", texto:"Texto"}); this.label.focus(); this.label.select(); });
+    sep();
+    this.estilo = document.createElement("select");
+    for (const k in ESTILOS){ const o = document.createElement("option"); o.value = k; o.textContent = ESTILOS[k]; this.estilo.appendChild(o); }
+    tb.appendChild(this.estilo);
+    this.drawBtn = btn("Dibujar línea", () => this.toggleDraw());
+    sep();
+    this.label = document.createElement("input"); this.label.placeholder = "Etiqueta"; this.label.disabled = true;
+    this.label.oninput = () => this.setLabel(this.label.value);
+    tb.appendChild(this.label);
+    this.rotBtn = btn("Girar", () => this.rotate(), "Gira la portería seleccionada 90°");
+    btn("Borrar", () => this.remove());
+    btn("Restaurar", () => { this.items = JSON.parse(this.orig); this.sel = -1; this.cancelDraw(); this.render(); this.sync(); });
+    sep();
+    btn("Descargar PNG", () => this.png());
+    btn("Ver JSON", () => this.toggleJson());
+
+    this.svg = el("svg", {class:"board", viewBox: this.vista === "media" ? "-1 -15.6 31.6 31.2" : "-30.6 -15.6 61.2 31.2"}, card);
+    drawRink(this.svg, "b" + idx);
+    this.layer = el("g", {}, this.svg);
+
+    this.hintEl = document.createElement("div"); this.hintEl.className = "hint"; card.appendChild(this.hintEl);
+    this.jsonEl = document.createElement("textarea"); this.jsonEl.className = "json"; this.jsonEl.readOnly = true; card.appendChild(this.jsonEl);
+
+    if (ex.descripcion || (ex.puntos_clave && ex.puntos_clave.length)){
+      const d = document.createElement("div"); d.className = "desc";
+      for (const par of String(ex.descripcion || "").split(/\n+/).filter(Boolean)){ const p = document.createElement("p"); p.textContent = par; d.appendChild(p); }
+      if (ex.puntos_clave && ex.puntos_clave.length){
+        const b = document.createElement("strong"); b.textContent = "Puntos clave"; d.appendChild(b);
+        const ul = document.createElement("ul");
+        for (const pc of ex.puntos_clave){ const li = document.createElement("li"); li.textContent = pc; ul.appendChild(li); }
+        d.appendChild(ul);
+      }
+      card.appendChild(d);
+    }
+
+    this.svg.addEventListener("pointerdown", e => this.down(e));
+    this.svg.addEventListener("pointermove", e => this.move(e));
+    this.svg.addEventListener("pointerup", () => this.up());
+    this.svg.addEventListener("pointercancel", () => this.up());
+    this.svg.addEventListener("dblclick", () => { if (this.drawing) this.finishDraw(); });
+    this.render(); this.sync();
+  }
+
+  pt(e){
+    const q = new DOMPoint(e.clientX, e.clientY).matrixTransform(this.svg.getScreenCTM().inverse());
+    return {x: q.x, y: q.y};
+  }
+  hint(t){ this.hintEl.textContent = t || ""; }
+
+  add(obj){
+    const cx = this.vista === "media" ? 15 : 0;
+    [obj.x, obj.y] = clamp(cx + Math.random()*4 - 2, Math.random()*4 - 2);
+    this.items.push(obj); this.sel = this.items.length - 1;
+    this.render(); this.sync();
+    this.hint("Arrastra el elemento a su sitio.");
+  }
+  remove(){
+    if (this.sel < 0) return;
+    this.items.splice(this.sel, 1); this.sel = -1; this.render(); this.sync();
+  }
+  rotate(){
+    const it = this.items[this.sel];
+    if (!it || it.tipo !== "porteria") return;
+    it.angulo = ((it.angulo || 0) + 90) % 360; this.render(); this.sync();
+  }
+  setLabel(v){
+    const it = this.items[this.sel]; if (!it) return;
+    if (it.tipo === "texto") it.texto = v; else it.etiqueta = v;
+    this.render(); this.refreshJson();
+  }
+
+  toggleDraw(){
+    if (this.drawing){ this.finishDraw(); return; }
+    this.drawing = {tipo:"trayectoria", estilo:this.estilo.value, puntos:[]};
+    this.sel = -1; this.drawBtn.classList.add("on"); this.drawBtn.textContent = "Terminar línea";
+    this.hint("Haz clic en la pista para marcar puntos. Doble clic, Intro o «Terminar línea» para acabar; Esc para cancelar.");
+    this.render(); this.sync();
+  }
+  finishDraw(){
+    const d = this.drawing; this.drawing = null;
+    this.drawBtn.classList.remove("on"); this.drawBtn.textContent = "Dibujar línea"; this.hint("");
+    if (d){
+      const pts = [];
+      for (const p of d.puntos) if (!pts.length || Math.hypot(p[0]-pts[pts.length-1][0], p[1]-pts[pts.length-1][1]) > 0.4) pts.push(p);
+      if (pts.length >= 2){ d.puntos = pts; this.items.push(d); this.sel = this.items.length - 1; }
+    }
+    this.render(); this.sync();
+  }
+  cancelDraw(){
+    this.drawing = null; this.drawBtn.classList.remove("on"); this.drawBtn.textContent = "Dibujar línea"; this.hint(""); this.render();
+  }
+
+  down(e){
+    activeBoard = this;
+    const p = this.pt(e);
+    if (this.drawing){ this.drawing.puntos.push(clamp(p.x, p.y)); this.render(); return; }
+    const t = e.target.closest("[data-i]");
+    if (!t){ this.sel = -1; this.render(); this.sync(); return; }
+    const i = +t.dataset.i;
+    this.sel = i;
+    this.drag = {i, h: t.dataset.h === undefined ? null : +t.dataset.h, start: p, orig: JSON.parse(JSON.stringify(this.items[i]))};
+    try { this.svg.setPointerCapture(e.pointerId); } catch(_){}
+    e.preventDefault();
+    this.render(); this.sync();
+  }
+  move(e){
+    const p = this.pt(e); this.mouse = p;
+    if (this.drawing){ this.render(); return; }
+    if (!this.drag) return;
+    const {i, h, start, orig} = this.drag, it = this.items[i];
+    const dx = p.x - start.x, dy = p.y - start.y;
+    if (it.tipo === "trayectoria"){
+      if (h !== null) it.puntos[h] = clamp(orig.puntos[h][0] + dx, orig.puntos[h][1] + dy);
+      else it.puntos = orig.puntos.map(q => clamp(q[0] + dx, q[1] + dy));
+    } else {
+      [it.x, it.y] = clamp(orig.x + dx, orig.y + dy);
+    }
+    this.render();
+  }
+  up(){ if (this.drag){ this.drag = null; this.refreshJson(); } }
+
+  render(){
+    while (this.layer.firstChild) this.layer.removeChild(this.layer.firstChild);
+    const order = this.items.map((_, i) => i).sort((a, b) => (Z[this.items[a].tipo] ?? 9) - (Z[this.items[b].tipo] ?? 9));
+    for (const i of order){
+      const it = this.items[i];
+      const g = el("g", {"data-i": i, style: "cursor:move"}, this.layer);
+      drawItem(g, it);
+      if (i === this.sel){
+        if (it.tipo === "trayectoria"){
+          it.puntos.forEach((q, k) => el("circle", {cx:q[0], cy:q[1], r:0.42, fill:"#fff", stroke:"#1f5fbf", "stroke-width":0.1, "data-i": i, "data-h": k, style:"cursor:grab"}, this.layer));
+        } else {
+          el("circle", {r: 1.25, fill:"none", stroke:"#1f5fbf", "stroke-width":0.08, "stroke-dasharray":"0.3 0.2"}, g);
+        }
+      }
+    }
+    if (this.drawing){
+      const pts = this.drawing.puntos.slice();
+      if (this.mouse) pts.push(clamp(this.mouse.x, this.mouse.y));
+      const g = el("g", {"pointer-events":"none"}, this.layer);
+      drawTraj(g, {estilo: this.drawing.estilo, puntos: pts}, 0.6);
+      for (const q of this.drawing.puntos) el("circle", {cx:q[0], cy:q[1], r:0.25, fill:"#1f5fbf"}, g);
+    }
+  }
+  sync(){
+    const it = this.items[this.sel];
+    const editable = it && (it.tipo === "jugador" || it.tipo === "texto" || it.tipo === "trayectoria");
+    this.label.disabled = !editable;
+    this.label.value = editable ? (it.tipo === "texto" ? (it.texto || "") : (it.etiqueta || "")) : "";
+    this.label.placeholder = it && it.tipo === "trayectoria" ? "Nº orden" : "Etiqueta";
+    this.rotBtn.disabled = !(it && it.tipo === "porteria");
+    this.refreshJson();
+  }
+  exportData(){ return Object.assign({}, this.ex, {elementos: this.items}); }
+  refreshJson(){ if (this.jsonEl.style.display === "block") this.jsonEl.value = JSON.stringify(this.exportData(), null, 2); }
+  toggleJson(){
+    const show = this.jsonEl.style.display !== "block";
+    this.jsonEl.style.display = show ? "block" : "none";
+    if (show){
+      this.refreshJson();
+      try { navigator.clipboard.writeText(this.jsonEl.value).then(() => this.hint("JSON copiado. Pégaselo a Claude para guardar esta versión del ejercicio."), () => this.hint("Copia el JSON y pégaselo a Claude para guardar esta versión.")); }
+      catch(_){ this.hint("Copia el JSON y pégaselo a Claude para guardar esta versión."); }
+    }
+  }
+  png(){
+    const sel = this.sel, dr = this.drawing;
+    this.sel = -1; this.drawing = null; this.render();
+    const clone = this.svg.cloneNode(true);
+    this.sel = sel; this.drawing = dr; this.render();
+    const vb = this.svg.viewBox.baseVal, W = 1800, H = Math.round(W * vb.height / vb.width);
+    clone.setAttribute("xmlns", NS); clone.setAttribute("width", W); clone.setAttribute("height", H);
+    clone.querySelectorAll("text").forEach(t => t.setAttribute("font-family", "Arial, Helvetica, sans-serif"));
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas"); c.width = W; c.height = H;
+      const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, W, H); x.drawImage(img, 0, 0, W, H);
+      try {
+        c.toBlob(b => {
+          const a = document.createElement("a"); a.href = URL.createObjectURL(b);
+          a.download = (this.ex.titulo || "ejercicio").toLowerCase().replace(/[^a-z0-9áéíóúñü]+/gi, "-") + ".png";
+          document.body.appendChild(a); a.click(); a.remove();
+          this.hint("Si no se descarga, haz una captura de pantalla de la pizarra.");
+        });
+      } catch(_){ this.hint("No se pudo descargar. Haz una captura de pantalla de la pizarra."); }
+    };
+    img.onerror = () => this.hint("No se pudo generar la imagen. Haz una captura de pantalla de la pizarra.");
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(clone));
+  }
+}
+
+/* ---------- Modo documento ---------- */
+function h(tag, text, cls, parent){
+  const e = document.createElement(tag);
+  if (text != null) e.textContent = text;
+  if (cls) e.className = cls;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const minutos = s => { const m = String(s || "").match(/\d+/); return m ? +m[0] : 0; };
+const espacio = ex => ex.espacio || (ex.vista === "media" ? "Media pista" : "Pista entera");
+
+function legend(parent, cls){
+  const lg = h("section", null, cls, parent);
+  for (const k in ESTILOS){
+    const s = h("span", null, null, lg);
+    const sv = el("svg", {viewBox:"0 -1 5 2"}, s);
+    drawTraj(sv, {estilo:k, puntos:[[0.3, 0], [4.6, 0]]});
+    s.appendChild(document.createTextNode(ESTILOS[k]));
+  }
+}
+
+function staticBoard(ex, id, parent){
+  const media = ex.vista === "media";
+  const svg = el("svg", {class: "pboard" + (media ? " media" : ""), viewBox: media ? "-1 -15.6 31.6 31.2" : "-30.6 -15.6 61.2 31.2"}, parent);
+  drawRink(svg, "p" + id);
+  const layer = el("g", {}, svg);
+  const items = ex.elementos || [];
+  items.map((_, i) => i).sort((a, b) => (Z[items[a].tipo] ?? 9) - (Z[items[b].tipo] ?? 9))
+       .forEach(i => drawItem(el("g", {}, layer), items[i]));
+}
+
+function block(parent, titulo, valor, ordenada){
+  if (valor == null || valor === "" || (Array.isArray(valor) && !valor.length)) return;
+  h("h3", titulo, null, parent);
+  if (Array.isArray(valor)){
+    const list = h(ordenada ? "ol" : "ul", null, null, parent);
+    valor.forEach(v => h("li", v, null, list));
+  } else {
+    String(valor).split(/\n+/).filter(Boolean).forEach(p => h("p", p, null, parent));
+  }
+}
+
+function renderPrint(root, data, ejercicios){
+  document.body.classList.add("print");
+  const total = data.duracion_total || (ejercicios.reduce((s, e) => s + minutos(e.duracion), 0) + " min");
+
+  const cover = h("section", null, "page", root);
+  h("p", "Plan de entrenamiento", "kicker", cover);
+  h("h1", data.titulo || "Sesión", null, cover);
+  if (data.fecha || data.equipo) h("div", [data.equipo, data.fecha].filter(Boolean).join(" · "), "sub", cover);
+  const stats = h("div", null, "stats", cover);
+  for (const [lab, val] of [["Duración", total], ["Jugadores", data.jugadores], ["Porteros", data.porteros], ["Ejercicios", ejercicios.length]]){
+    if (val == null || val === "") continue;
+    const s = h("div", null, "stat", stats); h("b", String(val), null, s); h("span", lab, null, s);
+  }
+  block(cover, "Objetivo de la sesión", data.objetivo);
+
+  h("h3", "Resumen", null, cover);
+  const tbl = h("table", null, "res", cover);
+  const hr = h("tr", null, null, h("thead", null, null, tbl));
+  ["#", "Ejercicio", "Minutos", "Espacio", "Origen"].forEach(t => h("th", t, null, hr));
+  const tb = h("tbody", null, null, tbl);
+  let t0 = 0;
+  ejercicios.forEach((ex, i) => {
+    const d = minutos(ex.duracion), tr = h("tr", null, null, tb);
+    h("td", String(i + 1), null, tr);
+    h("td", ex.titulo || `Ejercicio ${i + 1}`, null, tr);
+    h("td", d ? `${t0}–${t0 + d}` : (ex.duracion || ""), null, tr);
+    h("td", espacio(ex), null, tr);
+    h("td", ex.origen || "", null, tr);
+    t0 += d;
+  });
+
+  h("h3", "Notación", null, cover);
+  legend(cover, "legend");
+  block(cover, "Notas", data.notas);
+
+  ejercicios.forEach((ex, i) => {
+    const pg = h("section", null, "page", root);
+    h("p", `Ejercicio ${i + 1} de ${ejercicios.length}`, "kicker", pg);
+    h("h2", ex.titulo || `Ejercicio ${i + 1}`, null, pg);
+    const chips = h("div", null, "chips", pg);
+    if (ex.duracion) h("span", ex.duracion, "chip", chips);
+    h("span", espacio(ex), "chip", chips);
+    if (ex.origen) h("span", ex.origen, "chip o-" + ex.origen, chips);
+    if (ex.fuente) h("div", "Fuente: " + ex.fuente, "fuente", pg);
+    if ((ex.elementos || []).length) staticBoard(ex, i, pg);
+    block(pg, "Objetivo", ex.objetivo);
+    block(pg, "Organización", ex.organizacion);
+    block(pg, "Desarrollo", ex.desarrollo || ex.descripcion, true);
+    block(pg, "Puntos clave", ex.puntos_clave);
+    block(pg, "Variante / progresión", ex.variante);
+  });
+}
+
+/* ---------- Arranque ---------- */
+(function init(){
+  const root = document.getElementById("app");
+  if (!DATA){ root.textContent = "No hay ejercicios que mostrar."; return; }
+  const ejercicios = Array.isArray(DATA.ejercicios) ? DATA.ejercicios : [DATA];
+  document.title = DATA.titulo || ejercicios[0].titulo || "Pizarra de hockey";
+  if (DATA.__print){ renderPrint(root, DATA, ejercicios); return; }
+  if (DATA.titulo){ const t = document.createElement("h1"); t.textContent = DATA.titulo; root.appendChild(t); }
+
+  legend(root, "card legend");
+
+  ejercicios.forEach((ex, i) => new Board(ex, i, root));
+
+  document.addEventListener("keydown", e => {
+    if (!activeBoard) return;
+    const tag = (e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return;
+    if (e.key === "Escape" && activeBoard.drawing) activeBoard.cancelDraw();
+    else if (e.key === "Enter" && activeBoard.drawing) activeBoard.finishDraw();
+    else if ((e.key === "Delete" || e.key === "Backspace") && activeBoard.sel >= 0){ e.preventDefault(); activeBoard.remove(); }
+  });
+})();
+</script>
+</body>
+</html>

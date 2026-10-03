@@ -1,0 +1,48 @@
+{
+ "titulo": "Ejemplo",
+ "ejercicios": [
+  {
+   "titulo": "Vuelta con pase y tiro",
+   "vista": "entera",
+   "duracion": "10 min",
+   "descripcion": "Salida desde la esquina, patinaje por la valla, recibe el pase del entrenador en zona neutral, conduce y tira. Turnos alternos desde las dos esquinas.",
+   "puntos_clave": ["Pedir el pase con el palo en el hielo", "Recibir en velocidad, sin frenar", "Tirar con la cabeza alta"],
+   "elementos": [
+    {"tipo": "jugador", "equipo": "portero", "x": 25.4, "y": 0},
+    {"tipo": "jugador", "equipo": "propio", "etiqueta": "1", "x": -22, "y": 12.6},
+    {"tipo": "texto", "texto": "x5", "x": -22, "y": 10.3, "tam": 0.9},
+    {"tipo": "jugador", "equipo": "propio", "etiqueta": "2", "x": -22, "y": -12.6},
+    {"tipo": "texto", "texto": "x5", "x": -22, "y": -10.3, "tam": 0.9},
+    {"tipo": "jugador", "equipo": "entrenador", "x": 0, "y": -12.8},
+    {"tipo": "disco", "cantidad": 4, "x": 1.6, "y": -13.6},
+    {"tipo": "trayectoria", "estilo": "patinaje", "etiqueta": "1", "puntos": [[-21, 12.7], [-12, 13], [-3, 11.5], [2.5, 8.5]]},
+    {"tipo": "trayectoria", "estilo": "pase", "etiqueta": "2", "puntos": [[0.6, -11.6], [3, 7.4]]},
+    {"tipo": "trayectoria", "estilo": "conduccion", "etiqueta": "3", "puntos": [[4, 7.8], [12, 6.8], [19.5, 3]]},
+    {"tipo": "trayectoria", "estilo": "tiro", "etiqueta": "4", "puntos": [[20.3, 2.3], [25.6, 0.4]]}
+   ]
+  },
+  {
+   "titulo": "2c1 a portería",
+   "vista": "media",
+   "duracion": "8 min",
+   "descripcion": "Dos atacantes salen desde la línea azul contra un defensa que patina hacia atrás. El portador fija al defensa y decide: tiro o pase al compañero.",
+   "puntos_clave": ["Atacar el hombro del defensa", "El compañero, siempre con el palo listo para recibir", "El defensa cierra la línea de pase, no va a por el disco"],
+   "elementos": [
+    {"tipo": "jugador", "equipo": "portero", "x": 25.4, "y": 0},
+    {"tipo": "jugador", "equipo": "propio", "etiqueta": "A", "x": 9, "y": 6.5},
+    {"tipo": "disco", "x": 9.9, "y": 7.4},
+    {"tipo": "texto", "texto": "x3", "x": 9, "y": 9, "tam": 0.9},
+    {"tipo": "jugador", "equipo": "propio", "etiqueta": "B", "x": 9, "y": -6.5},
+    {"tipo": "texto", "texto": "x3", "x": 9, "y": -9, "tam": 0.9},
+    {"tipo": "jugador", "equipo": "rival", "etiqueta": "D", "x": 15.5, "y": 0},
+    {"tipo": "cono", "x": 7.6, "y": 13},
+    {"tipo": "cono", "x": 7.6, "y": -13},
+    {"tipo": "trayectoria", "estilo": "conduccion", "etiqueta": "1", "puntos": [[9.9, 5.8], [14, 5.6], [18.5, 4.2]]},
+    {"tipo": "trayectoria", "estilo": "patinaje", "etiqueta": "1", "puntos": [[9.9, -5.9], [15, -5.6], [20.5, -3]]},
+    {"tipo": "trayectoria", "estilo": "atras", "puntos": [[16.4, 0.4], [19.6, 0.6]]},
+    {"tipo": "trayectoria", "estilo": "pase", "etiqueta": "2", "puntos": [[19, 3.4], [20.8, -2]]},
+    {"tipo": "trayectoria", "estilo": "tiro", "etiqueta": "3", "puntos": [[21.6, -2.2], [25.6, -0.4]]}
+   ]
+  }
+ ]
+}
